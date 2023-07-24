@@ -12,3 +12,66 @@
 // the screen should remain fully clear as long as no key is pressed.
 
 // Put your code here.
+(LOOP)
+@KBD
+D=M
+
+// if value of RAM[KBD] != 0 then fill in with black pixels, else fill in with white pixels
+@WHITE
+D;JEQ
+
+(BLACK)
+@SCREEN
+D=A
+@row
+M=D
+
+(BLACKLOOP)
+// check current row is valid
+@24576
+D=A
+@row
+D=D-M
+@LOOP
+D;JEQ
+
+@row
+A=M
+M=-1
+
+@row
+M=M+1
+
+@BLACKLOOP
+0;JMP
+
+(WHITE)
+@SCREEN
+D=A
+@row
+M=D
+
+(WHITELOOP)
+// check current row is valid
+@24576
+D=A
+@row
+D=D-M
+@LOOP
+D;JEQ
+
+@row
+A=M
+M=0
+
+@row
+M=M+1
+
+@WHITELOOP
+0;JMP
+
+
+
+
+
+
