@@ -1,10 +1,14 @@
 #include "parser.h"
 #include <string>
 #include <bitset>
+#include <cctype>
 
-Parser::Parser(const std::string &currentLine) {
+Parser::Parser(const SymbolTable &table) : table(table), stackPointer(16),
+                                           commandType(Unknown) {
+}
+
+void Parser::setCurrentLine(const std::string &currentLine) {
     this->currentLine = currentLine;
-    this->commandType = Unknown;
 }
 
 std::bitset<16> Parser::getCurrentMachineCode() {
@@ -13,10 +17,6 @@ std::bitset<16> Parser::getCurrentMachineCode() {
 }
 
 CommandType Parser::getCommandType() {
-    if (this->commandType != Unknown) {
-        return this->commandType;
-    }
-
     std::string at = "@";
     size_t atPos = this->currentLine.find(at);
     if (atPos != std::string::npos) {
@@ -36,32 +36,30 @@ void Parser::parse() {
         std::bitset<16> comp = (this->code).getComp(this->getComp());
         std::bitset<16> dest = (this->code).getDest(this->getDest());
         std::bitset<16> jump = (this->code).getJump(this->getJump());
-//        std::cout << "comp" << comp << std::endl;
-//        std::cout << "dest" << dest << std::endl;
-//        std::cout << "jump" << jump << std::endl;
         this->currentMachineCode = comp | dest | jump;
     }
 }
 
 std::string Parser::getAddr() {
-    if (this->addr != "") {
-        return this->addr;
-    }
-
     std::string at = "@";
     size_t atPos = this->currentLine.find(at);
-    if (atPos != std::string::npos) {
-        this->addr = this->currentLine.substr(atPos + 1);
+
+    this->addr = this->currentLine.substr(atPos + 1);
+
+    if (!std::isdigit(this->addr.front())) {
+        this->addr = this->table.getAddr(this->addr);
+    }
+
+    if (this->addr == "") {
+        this->addr = std::to_string(this->stackPointer);
+        this->table.setAddr(this->currentLine.substr(atPos + 1), this->addr);
+        this->stackPointer++;
     }
 
     return this->addr;
 }
 
 std::string Parser::getComp() {
-    if (this->comp != "") {
-        return this->comp;
-    }
-
     std::string equal = "=";
     size_t equalPos = this->currentLine.find(equal);
     if (equalPos != std::string::npos) {
@@ -78,10 +76,6 @@ std::string Parser::getComp() {
 }
 
 std::string Parser::getDest() {
-    if (this->dest != "") {
-        return this->dest;
-    }
-
     std::string equal = "=";
     size_t equalPos = this->currentLine.find(equal);
     if (equalPos == std::string::npos) {
@@ -94,10 +88,6 @@ std::string Parser::getDest() {
 }
 
 std::string Parser::getJump() {
-    if (this->jump != "") {
-        return this->jump;
-    }
-
     std::string semicolon = ";";
     size_t pos = this->currentLine.find(semicolon);
     if (pos == std::string::npos) {
